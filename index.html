@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
-<meta name="wl-build" content="20261114e">
+<meta name="wl-build" content="20261114f">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>WaterLab · Кабінет</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -282,7 +282,7 @@ header .tab[aria-selected="true"],.tab[aria-selected="true"]{background:var(--ac
 
 <script src="config.js?v=202611091530"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="shim.js?v=20261114e"></script>
+<script src="shim.js?v=20261114f"></script>
 <script>
 const MN=['січень','лютий','березень','квітень','травень','червень','липень','серпень','вересень','жовтень','листопад','грудень'];
 const COLS=['points','months','pm','exp','settle','meta','util','pay','tariffs','inv','bal','mov','radj','expreq','svc','sales','meter','gwday'];
@@ -696,11 +696,12 @@ function addSvc(pid){
       if(!await w(()=>db.doc('svc/'+db.collection('svc').doc().id).set(j)))return 'Не збереглося'}
     toast('Записано')});
 }
-function editSvc(id){const e=S.svc[id];if(!e)return;
-  openSheet('Запис регламенту',(S.points[e.point]||{}).name||'',svcForm(e.point,e),async fd=>{
+function svcGroup(e){return Object.entries(S.svc).filter(([,x])=>x.point===e.point&&x.date===e.date&&(SVC_T[x.type]||(x.type==='work'&&x.st==='new'))).map(([i])=>i)}
+function editSvc(id){const e=S.svc[id];if(!e)return;const G=svcGroup(e), okJob=Object.values(S.svc).some(x=>x.type==='work'&&x.st==='ok'&&x.point===e.point&&x.date===e.date&&x.src!=='anatoliy');
+  openSheet('Запис регламенту',((S.points[e.point]||{}).name||'')+' · '+dmy(e.date)+'. «Видалити» прибирає всю заміну цього дня ('+G.filter(i=>SVC_T[S.svc[i].type]).map(i=>SVC_T[S.svc[i].type].toLowerCase()).join(', ')+(G.some(i=>S.svc[i].type==='work')?', непідтверджена оплата':'')+') — лічильники повертаються до попередньої заміни.'+(okJob?' Оплату вже підтверджено — її приберіть у витратах окремо.':''),svcForm(e.point,e),async fd=>{
     const rd=String(fd.reading||'').trim()===''?null:parseNum(String(fd.reading)), iv=String(fd.interval||'').trim()===''?null:parseNum(String(fd.interval));
     const d={...e,point:fd.point,type:fd.type,date:fd.date,note:fd.note||''};delete d.id;if(rd!=null)d.reading=rd;else delete d.reading;if(iv)d.interval=iv;else delete d.interval;
-    if(!await w(()=>db.doc('svc/'+id).set(d)))return 'Не збереглося';toast('Збережено')},async()=>await w(()=>db.doc('svc/'+id).delete()))}
+    if(!await w(()=>db.doc('svc/'+id).set(d)))return 'Не збереглося';toast('Збережено')},async()=>{for(const i of G)await w(()=>db.doc('svc/'+i).delete());toast('Заміну видалено');return true})}
 /* ---------- роботи Анатолія й розрахунок ---------- */
 let svcSub='reg';
 function setSvcSub(v){svcSub=['job','task'].includes(v)?v:'reg';render()}

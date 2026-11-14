@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
-<meta name="wl-build" content="20261114i">
+<meta name="wl-build" content="20261114j">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>WaterLab · Кабінет</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -74,6 +74,7 @@ a.lnk{color:var(--acc,#2a6fdb);text-decoration:underline;cursor:pointer}
 .gwd{text-transform:none;letter-spacing:0;font-weight:400;opacity:.8}
 .gwthru{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
 label.chk{display:inline-flex;align-items:center;gap:6px;margin:4px 12px 4px 0;font-size:14px}label.chk input{width:auto;min-height:0}
+.svt .eqc{width:29%}@media (max-width:640px){.svt .eqc{width:31%}}.svt td.num .pbar{width:100%}
 .pbar{height:5px;border-radius:3px;background:var(--line);margin-top:4px;overflow:hidden}.pbar i{display:block;height:100%;background:#2e9e5b}.pbar i.soon{background:#e6a700}.pbar i.over{background:#d23c3c}
 td.hi-warn,td.hi-bad{position:relative}td.hi-warn>*:first-child,td.hi-warn{color:#b86e00}td.hi-bad>*:first-child,td.hi-bad{color:#c4413b;font-weight:600}
 td.hi-warn::before,td.hi-bad::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:2px;background:#e8a317}td.hi-bad::before{background:#d9534f}
@@ -282,7 +283,7 @@ header .tab[aria-selected="true"],.tab[aria-selected="true"]{background:var(--ac
 
 <script src="config.js?v=202611091530"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="shim.js?v=20261114i"></script>
+<script src="shim.js?v=20261114j"></script>
 <script>
 const MN=['січень','лютий','березень','квітень','травень','червень','липень','серпень','вересень','жовтень','листопад','грудень'];
 const COLS=['points','months','pm','exp','settle','meta','util','pay','tariffs','inv','bal','mov','radj','expreq','svc','sales','meter','gwday'];
@@ -641,21 +642,21 @@ function viewSvc(){
   const n=st=>L.filter(x=>x.st===st).length, mo=d=>{const m=Math.round(dayDiff(d,todayISO2())/30.4);return m<1?'цього місяця':m+' міс. тому'};
   const rows=L.map(x=>{const bar=x.last?`<div class="pbar"><i style="width:${Math.min(100,Math.round(x.pct*100))}%" class="${x.st}"></i></div>`:'';
     return `<tr class="click" data-act="svcPoint" data-id="${x.p.id}"><td>${esc(x.p.name)}<div class="note">${x.last?'заміна '+dmy(x.last.date):'немає даних'}${x.last&&x.src!=='meter'?' · оцінка':''}${x.last&&x.last.chk&&Object.keys(SVC_CHK).some(k=>!x.last.chk[k])?`<div class="note warnc">без обслуговування: ${Object.keys(SVC_CHK).filter(k=>!x.last.chk[k]).map(k=>SVC_CHK[k]).join(', ')}</div>`:''}</div></td>
-      <td class="num">${x.last?`${f0(x.used)} з ${f0(x.interval)} л${bar}<div class="note ${x.st==='over'?'neg':''}">${x.st==='over'?'прострочено на '+f0(-x.left)+' л':x.days!=null?'≈ '+x.days+' дн.'+(x.due?' · '+dmy(x.due):''):''}</div>`:'—'}</td>
+      <td class="num">${x.last?`${f0(x.used)} з ${f0(x.interval/1000)}к${bar}<div class="note ${x.st==='over'?'neg':''}">${x.st==='over'?'прострочено на '+f0(-x.left)+' л':x.days!=null?'≈ '+x.days+' дн.'+(x.due?' · '+dmy(x.due):''):''}</div>`:'—'}</td>
       <td class="num">${x.memL?`${f0(x.memUsed||0)} з ${f0(MEM_INT/1000)}к<div class="pbar"><i style="width:${Math.min(100,Math.round((x.memPct||0)*100))}%" class="${x.memSt}"></i></div><div class="note ${x.memSt==='over'?'neg':''}">${x.memSt==='over'?'прострочено':x.memDays!=null&&x.memDays<400?'≈ '+x.memDays+' дн.':mo(x.memL.date)}</div>`:'—'}</td>
       <td class="num hide-sm">${x.toL?dmy(x.toL.date)+`<div class="note">${esc(x.toL.note||'')}</div>`:'—'}</td></tr>`}).join('');
   return `<section class="card"><div class="shead"><h2>Регламент заміни фільтрів</h2></div>
   ${canWrite?`<div class="bigacts one" style="margin:0 0 12px"><button class="btn pri main" data-act="addSvc" type="button">+ Заміна / ТО</button></div>`:''}
   <div class="tiles t3"><div class="tile"><div class="l">Прострочено</div><div class="v ${n('over')?'neg':''}">${n('over')}</div><div class="s">точок</div></div><div class="tile"><div class="l">Скоро (до 14 днів)</div><div class="v">${n('soon')}</div><div class="s">точок</div></div><div class="tile"><div class="l">У нормі</div><div class="v">${n('ok')}</div><div class="s">точок</div></div></div>
   ${memCard(L)}
-  <div class="tbl" style="margin-top:10px"><table class="pl ut"><thead><tr><th>Точка</th><th class="num">Фільтри</th><th class="num">Мембрани</th><th class="num hide-sm">ТО</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="tbl" style="margin-top:10px"><table class="pl ut svt"><thead><tr><th>Точка</th><th class="num eqc">Фільтри</th><th class="num eqc">Мембрани</th><th class="num hide-sm">ТО</th></tr></thead><tbody>${rows}</tbody></table></div>
   ${role==='tech'?'<p class="note">Скільки води пройшло через фільтри = лічильник води на вході автомата мінус показник при заміні.</p>':`<p class="note">Скільки води пройшло через фільтри = лічильник води на вході автомата (Gwaters) мінус показник при заміні. Якщо лічильника немає — оцінка: продані літри з Gwaters від дня заміни × коефіцієнт точки (скільки літрів проходить через фільтри на 1 проданий літр — за лічильником автомата на попередніх замінах). Продажі оновлено: ${salesUpd()?dmy(salesUpd().slice(0,10))+(salesUpd().slice(11)?' '+salesUpd().slice(11,16):''):'—'}. Натисніть точку, щоб побачити історію.</p>`}</section>`;
 }
 function memCard(L){const st=memStock(), soon=L.filter(x=>x.memL&&(x.memSt==='over'||x.memSt==='soon')), d30=L.filter(x=>x.memL&&x.memSt==='ok'&&x.memDays!=null&&x.memDays<=30);
   const need=soon.length+d30.length, low=st.q<need;
-  return `<div class="memc ${low?'low':''}"><div><div class="l">Мембрани на складі</div><div class="v">${st.q} к-т</div></div>
+  return `<div class="memc ${low?'low':''}"><div><div class="l">Мембрани на складі</div><div class="v">${st.q} к-т</div>${canWrite?`<button class="btn sm" data-act="addMemSt" type="button" style="margin-top:6px">+ Надходження</button>`:''}</div>
    <div><div class="l">Заміна мембран скоро</div><div class="v">${soon.length}<span class="s"> ${soon.length?'· '+soon.map(x=>esc(x.p.name)).slice(0,4).join(', '):'точок'}</span></div>${d30.length?`<div class="s">ще ${d30.length} — протягом 30 днів</div>`:''}</div>
-   ${(()=>{const k=kitStock();return k.any?`<div><div class="l">Фільтри на складі</div><div class="v">${k.q} к-т</div></div>`:''})()}</div>${low?`<p class="note neg" style="margin:4px 0 0">Мембран на складі менше, ніж потрібно найближчим часом (${need}) — пора закупити. Покупку вносьте у «Витрати» → «Фільтри та мембрани», вказавши кількість.</p>`:''}`}
+   ${(()=>{const k=kitStock();return k.any?`<div><div class="l">Фільтри на складі</div><div class="v">${k.q} к-т</div></div>`:''})()}</div>${low?`<p class="note neg" style="margin:4px 0 0">Мембран на складі менше, ніж потрібно найближчим часом (${need}) — пора закупити. Внесіть кнопкою «+ Надходження» або через «Витрати» → «Фільтри та мембрани».</p>`:''}`}
 function addMemSt(){openSheet('Мембрани на склад','Скільки комплектів мембран надійшло (1 комплект = 3 шт). Для виправлення залишку можна ввести мінус.',
   fld('date','Дата',todayISO2(),{type:'date'})+fld('qty','Кількість, к-т','')+fld('note','Коментар','',{type:'text',full:true}),async fd=>{
   const q=parseNum(String(fd.qty||''));if(!q)return 'Вкажіть кількість';

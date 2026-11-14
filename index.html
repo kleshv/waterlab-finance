@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
-<meta name="wl-build" content="20261114f">
+<meta name="wl-build" content="20261114g">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>WaterLab · Кабінет</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -282,10 +282,10 @@ header .tab[aria-selected="true"],.tab[aria-selected="true"]{background:var(--ac
 
 <script src="config.js?v=202611091530"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="shim.js?v=20261114f"></script>
+<script src="shim.js?v=20261114g"></script>
 <script>
 const MN=['січень','лютий','березень','квітень','травень','червень','липень','серпень','вересень','жовтень','листопад','грудень'];
-const COLS=['points','months','pm','exp','settle','meta','util','pay','tariffs','inv','bal','mov','radj','expreq','svc','sales','meter','gwday'];
+const COLS=['points','months','pm','exp','settle','meta','util','pay','tariffs','inv','bal','mov','radj','expreq','svc','sales','meter','gwday','f_moves'];
 const ARTS=[
  {g:'Обслуговування мережі',cat:'ТОіР',items:['Сервіс і заміна фільтрів','Фільтри та мембрани','Ремонт і запчастини','Електрика та монтаж','Інкасація','Пальне','Зв’язок, SIM, CRM','Господарські витрати й прибирання','Доставка','Інше']},
  {g:'Податки і банк',cat:'ФА',items:['Єдиний податок','Військовий збір','Банк і РКО','Банк 1,3% еквайринг','Checkbox','Бухгалтер / юрист']},
@@ -293,7 +293,7 @@ const ARTS=[
 const REC=new Set(['Єдиний податок','Військовий збір','Банк і РКО','Checkbox','Бухгалтер / юрист']);
 const CATL={'ТОіР':'обслуговування','ФА':'податки і банк','Розвиток':'капвкладення'};
 const artCat=a=>{for(const g of ARTS) if(g.items.includes(a)) return g.cat; return null};
-const S={points:{},months:{},pm:{},exp:{},settle:{},meta:{},util:{},pay:{},tariffs:{},inv:{},bal:{},mov:{},radj:{},expreq:{},svc:{},sales:{},meter:{},gwday:{}};
+const S={points:{},months:{},pm:{},exp:{},settle:{},meta:{},util:{},pay:{},tariffs:{},inv:{},bal:{},mov:{},radj:{},expreq:{},svc:{},sales:{},meter:{},gwday:{},f_moves:{}};
 let me=null, userApi=null; const names={};
 const loaded=new Set();
 let role='owner'; const ACCT_TABS=['util','rent','recon','points','myexp'];
@@ -580,7 +580,11 @@ function reqList(filter){return Object.entries(S.expreq).map(([id,r])=>({id,...r
 const SVC_T={in:'Вхідні фільтри',post:'Пост-фільтри',mem:'Мембрани',to:'ТО (конліфт, монетник)'};
 const MEM_INT=80000, MEM_START='2026-11-09';
 const SVC_CHK={coin:'монетник',bill:'купюрник',lift:'конліфт'};
-function memStock(){let q=0;const L=[];for(const [id,e] of Object.entries(S.svc)){if(e.type==='memst'){q+=+e.qty||0;L.push({id,...e})}else if(e.type==='mem'&&e.date>MEM_START)q-=1}return {q,L:L.sort((a,b)=>a.date.localeCompare(b.date))}}
+function fMem(){let q=0,v=0,bq=0;for(const m of Object.values(S.f_moves||{})){for(const l of m.lines||[]){if(l.i!=='mem')continue;const n=+l.q||0;
+    if(m.type==='buy'||m.type==='contrib'){q+=n;bq+=n;v+=n*(+l.p||0)}else if(m.type==='sale'||m.type==='take')q-=n;else if(m.type==='adj')q+=n}}
+  return {q,cost:bq?v/bq:1642.94}}
+function memStock(){let own=0,used=0,pend=0;for(const e of Object.values(S.svc)){if(e.type==='memst')own+=+e.qty||0;else if(e.type==='mem'&&e.date>MEM_START){if(e.src==='wl')used++;else if(e.src!=='f')pend++}}
+  const f=fMem(), ownLeft=own-used;return {q:ownLeft+f.q-pend,ownLeft,f:f.q,pend,cost:f.cost}}
 const todayISO2=()=>new Date().toISOString().slice(0,10);
 function svcEv(pid,t){return Object.entries(S.svc).map(([id,e])=>({id,...e})).filter(e=>e.point===pid&&(!t||e.type===t)).sort((a,b)=>a.date.localeCompare(b.date))}
 const mDays=m=>{const[y,mm]=m.split('-').map(Number);return new Date(y,mm,0).getDate()};
@@ -652,7 +656,7 @@ function memCard(L){const st=memStock(), soon=L.filter(x=>x.memL&&(x.memSt==='ov
   const need=soon.length+d30.length, low=st.q<need;
   return `<div class="memc ${low?'low':''}"><div><div class="l">Мембрани на складі</div><div class="v">${st.q} к-т</div></div>
    <div><div class="l">Заміна мембран скоро</div><div class="v">${soon.length}<span class="s"> ${soon.length?'· '+soon.map(x=>esc(x.p.name)).slice(0,4).join(', '):'точок'}</span></div>${d30.length?`<div class="s">ще ${d30.length} — протягом 30 днів</div>`:''}</div>
-   ${canWrite?`<button class="btn sm" data-act="addMemSt" type="button">+ Надходження</button>`:''}</div>${low?`<p class="note neg" style="margin:4px 0 0">Мембран на складі менше, ніж потрібно найближчим часом (${need}) — пора закупити.</p>`:''}`}
+   <div class="s" style="margin-left:auto;max-width:200px">${st.ownLeft>0?`залишок WaterLab ${st.ownLeft} + склад «Фільтрів» ${st.f}`:`склад «Фільтрів»: ${st.f}`}${st.pend?` · ${st.pend} очікують підтвердження`:''}${role==='owner'?'<br>Закупівля — у «Фільтрах»':''}</div></div>${low?`<p class="note neg" style="margin:4px 0 0">Мембран на складі менше, ніж потрібно найближчим часом (${need}) — пора закупити.</p>`:''}`}
 function addMemSt(){openSheet('Мембрани на склад','Скільки комплектів мембран надійшло (1 комплект = 3 шт). Для виправлення залишку можна ввести мінус.',
   fld('date','Дата',todayISO2(),{type:'date'})+fld('qty','Кількість, к-т','')+fld('note','Коментар','',{type:'text',full:true}),async fd=>{
   const q=parseNum(String(fd.qty||''));if(!q)return 'Вкажіть кількість';
@@ -691,8 +695,8 @@ function addSvc(pid){
     for(const t of types){const d={point:fd.point,type:t,date:fd.date,note:fd.note||'',by:me||''};if(t!=='to'){if(rd!=null)d.reading=rd;if(iv&&t!=='mem')d.interval=iv}if(t==='in'||(t==='post'&&!types.includes('in')))d.chk=chk;
       if(!await w(()=>db.doc('svc/'+db.collection('svc').doc().id).set(d)))return 'Не збереглося'}
     const wk=parseNum(String(fd.work||0))||0, fl=types.includes('in')||types.includes('post')?(parseNum(String(fd.filt||0))||0):0;
-    if(wk||fl){const kind=types.includes('in')||types.includes('post')?'kit':types.includes('mem')?'mem':'svc';
-      const j={type:'work',kind,point:fd.point,date:fd.date,amount:wk,st:'new',by:me||'',note:fd.note||''};if(fl)j.filt=fl;
+    if(wk||fl||types.includes('mem')){const kind=types.includes('in')||types.includes('post')?'kit':types.includes('mem')?'mem':'svc';
+      const j={type:'work',kind,point:fd.point,date:fd.date,amount:wk,st:'new',by:me||'',note:fd.note||''};if(fl)j.filt=fl;if(types.includes('mem'))j.mem=1;
       if(!await w(()=>db.doc('svc/'+db.collection('svc').doc().id).set(j)))return 'Не збереглося'}
     toast('Записано')});
 }
@@ -749,7 +753,7 @@ function viewJobs(){
   <div class="tile"><div class="l">Роботи · ${MN[+m.slice(5)-1]}</div><div class="v">${f0(sum(mw))}</div><div class="s">${mw.length} записів</div></div>
   <div class="tile"><div class="l">Виплачено · ${MN[+m.slice(5)-1]}</div><div class="v">${f0(sum(mp))}</div><div class="s">${mp.length} виплат</div></div></div></section>`;
   if(P.length)h+=`<section class="card"><h2>Чекає підтвердження</h2><p class="note">${owner?'Після підтвердження робота й фільтри потрапляють у витрати WaterLab (платить Даниїл).':'Даниїл підтвердить — і запис піде у витрати.'}</p>
-   ${P.map(j=>`<div class="kv bi"><span>${dmy(j.date)} · ${esc(JOBK[j.kind]||j.kind)} · ${esc((S.points[j.point]||{}).name||'')}<div class="note">робота ${f0(j.amount)}${j.filt?' · фільтри '+nf2.format(j.filt):''}${j.note?' · '+esc(j.note):''}</div></span><b>${f0((+j.amount||0)+(+j.filt||0))}${owner?`<div style="margin-top:4px"><button class="btn sm pri" data-act="jobOk" data-id="${j.id}" type="button">Підтвердити</button></div>`:''}</b></div>`).join('')}</section>`;
+   ${P.map(j=>`<div class="kv bi"><span>${dmy(j.date)} · ${esc(JOBK[j.kind]||j.kind)} · ${esc((S.points[j.point]||{}).name||'')}<div class="note">робота ${f0(j.amount)}${j.filt?' · фільтри '+nf2.format(j.filt):''}${j.mem?' · + мембрани зі складу':''}${j.note?' · '+esc(j.note):''}</div></span><b>${f0((+j.amount||0)+(+j.filt||0))}${owner?`<div style="margin-top:4px"><button class="btn sm pri" data-act="jobOk" data-id="${j.id}" type="button">Підтвердити</button></div>`:''}</b></div>`).join('')}</section>`;
   let cm='',rows='';const R=L.slice().reverse().slice(0,120);
   for(const j of R){const mm=j.date.slice(0,7);if(mm!==cm){cm=mm;const W=L.filter(x=>x.type==='work'&&x.date.slice(0,7)===mm),Pp=L.filter(x=>x.type==='pay'&&x.date.slice(0,7)===mm);rows+=`<tr class="grp"><td colspan="2">${mLabel(mm)}</td><td class="num">${sum(W)?'роботи '+f0(sum(W)):''}${sum(W)&&sum(Pp)?' · ':''}${sum(Pp)?'виплати '+f0(sum(Pp)):''}</td></tr>`}
     const pay=j.type==='pay';
@@ -770,8 +774,13 @@ function editJob(id){const j=S.svc[id];if(!j)return;const owner=role==='owner';
   openSheet(j.type==='pay'?'Виплата Анатолію':(JOBK[j.kind]||'Робота'),j.st==='ok'&&j.expId?'Уже у витратах WaterLab — зміни тут не змінять витрату.':'',jobForm(j),fd=>saveJob(id,j,fd),async()=>await w(()=>db.doc('svc/'+id).delete()))}
 async function jobOk(id){const j=S.svc[id];if(!j||j.st!=='new')return;
   let m=j.date.slice(0,7);if(isClosed(m)||!S.months[m]){const op=monthsList().filter(x=>!isClosed(x)).pop();if(!op){toast('Немає відкритого місяця');return}m=op}
-  const amt=(+j.amount||0)+(+j.filt||0);const eid=db.collection('exp').doc().id;
-  const e={cat:'ТОіР',article:JOBART[j.kind]||'Сервіс і заміна фільтрів',amount:Math.round(amt*100)/100,month:m,date:j.date,point:j.point||'',payer:'Даниїл',note:(JOBK[j.kind]||'')+(j.filt?` (робота ${f0(j.amount)} + фільтри ${nf2.format(j.filt)})`:'')+(j.note?' · '+j.note:''),recurring:false,by:me||'',src:'svc:'+id};
+  let memCost=0,memNote='';const MR=Object.entries(S.svc).find(([,e])=>e.type==='mem'&&e.point===j.point&&e.date===j.date&&!e.src);
+  if(MR){const st=memStock();if(st.ownLeft>0){await w(()=>db.doc('svc/'+MR[0]).set({...MR[1],src:'wl'}));memNote=' · мембрани з залишку WaterLab'}
+    else{const pr=Math.round(st.cost*100)/100;const fid=db.collection('f_moves').doc().id;
+      if(!await w(()=>db.doc('f_moves/'+fid).set({type:'sale',date:j.date,client:'WaterLab',tier:'D',recv:'Даниїл',lines:[{i:'mem',q:1,p:pr}],note:'Регламент: '+((S.points[j.point]||{}).name||j.point),by:me||'',t:Date.now(),src:'svc:'+id})))return;
+      await w(()=>db.doc('svc/'+MR[0]).set({...MR[1],src:'f',fmove:fid}));memCost=pr;memNote=' + мембрани '+nf2.format(pr)}}
+  const amt=(+j.amount||0)+(+j.filt||0)+memCost;const eid=db.collection('exp').doc().id;
+  const e={cat:'ТОіР',article:JOBART[j.kind]||'Сервіс і заміна фільтрів',amount:Math.round(amt*100)/100,month:m,date:j.date,point:j.point||'',payer:'Даниїл',note:(JOBK[j.kind]||'')+(j.filt?` (робота ${f0(j.amount)} + фільтри ${nf2.format(j.filt)}${memNote})`:memNote)+(j.note?' · '+j.note:''),recurring:false,by:me||'',src:'svc:'+id};
   if(!await w(()=>db.doc('exp/'+eid).set(e)))return;
   await w(()=>db.doc('svc/'+id).set({...j,st:'ok',expId:eid,okBy:me||''}));toast('Підтверджено · у витратах '+mLabel(m))}
 function viewMyExp(){

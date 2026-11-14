@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
-<meta name="wl-build" content="20261114j">
+<meta name="wl-build" content="20261114k">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>WaterLab · Кабінет</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -75,6 +75,7 @@ a.lnk{color:var(--acc,#2a6fdb);text-decoration:underline;cursor:pointer}
 .gwthru{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
 label.chk{display:inline-flex;align-items:center;gap:6px;margin:4px 12px 4px 0;font-size:14px}label.chk input{width:auto;min-height:0}
 .svt .eqc{width:29%}@media (max-width:640px){.svt .eqc{width:31%}}.svt td.num .pbar{width:100%}
+.card.bkdue{border-color:#f0c96b;background:#fffaf0}.bkdue .shead{gap:10px;align-items:center}
 .pbar{height:5px;border-radius:3px;background:var(--line);margin-top:4px;overflow:hidden}.pbar i{display:block;height:100%;background:#2e9e5b}.pbar i.soon{background:#e6a700}.pbar i.over{background:#d23c3c}
 td.hi-warn,td.hi-bad{position:relative}td.hi-warn>*:first-child,td.hi-warn{color:#b86e00}td.hi-bad>*:first-child,td.hi-bad{color:#c4413b;font-weight:600}
 td.hi-warn::before,td.hi-bad::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:2px;background:#e8a317}td.hi-bad::before{background:#d9534f}
@@ -283,7 +284,7 @@ header .tab[aria-selected="true"],.tab[aria-selected="true"]{background:var(--ac
 
 <script src="config.js?v=202611091530"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="shim.js?v=20261114j"></script>
+<script src="shim.js?v=20261114k"></script>
 <script>
 const MN=['січень','лютий','березень','квітень','травень','червень','липень','серпень','вересень','жовтень','листопад','грудень'];
 const COLS=['points','months','pm','exp','settle','meta','util','pay','tariffs','inv','bal','mov','radj','expreq','svc','sales','meter','gwday'];
@@ -936,7 +937,7 @@ function viewTrend(){
     svg+=`<rect x="${x-bw/2+5}" y="${y(Math.max(c.op,0))}" width="${bw-10}" height="${y(0)-y(Math.max(c.op,0))}" rx="2" fill="var(--link)"/>`;
     svg+=`<text x="${x}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--muted)">${mShort(c.m)}</text>`;});
   svg+=`</svg>`;
-  let h=`<section class="card"><div class="shead"><h2>Резервна копія</h2><button class="btn sm pri" data-act="exportXlsx" type="button" id="xlsxBtn">Завантажити все в Excel</button></div></section>`;
+  let h=`<section class="card"><div class="shead"><h2>Резервна копія</h2><div style="display:flex;gap:6px;flex-wrap:wrap">${role==='owner'?`<button class="btn sm pri" data-act="backupJson" type="button" id="bkBtn">Повна копія бази</button>`:''}<button class="btn sm" data-act="exportXlsx" type="button" id="xlsxBtn">Таблиці в Excel</button></div></div>${role==='owner'?`<p class="note" style="margin:6px 0 0">Повна копія — файл з усіма даними обох баз (вода й фільтри), з нього базу можна відновити повністю. Зберігайте його окремо (iCloud / Google Drive / пошта). Остання копія: ${bkLast()?dmy(bkLast().date)+(bkLast().by?' · '+esc(bkLast().by):''):'ще не робилась'}.</p>`:''}</section>`;
   h+=`<section class="card chart"><h2>Виручка й операційний прибуток · ${Y}</h2>${svg}<div class="legend"><span><i style="background:var(--cyan);border:1px solid var(--line)"></i>виручка</span><span><i style="background:var(--link)"></i>операційний прибуток</span></div></section>`;
   const tr=(lab,x,cls='')=>`<tr class="${cls}"><td>${lab}</td><td class="num hide-sm">${f0(x.L)}</td><td class="num hide-sm">${x.L?nf2.format(x.R/x.L):'—'}</td><td class="num">${f0(x.R)}</td><td class="num hide-sm">${f0(x.opex)}</td><td class="num ${sgn(x.op)}">${f0(x.op)}</td><td class="num">${x.R?(x.op/x.R*100).toFixed(1).replace('.',',')+'%':'—'}</td><td class="num hide-sm">${x.capex?f0(x.capex):'—'}</td><td class="num ${sgn(x.net)}">${f0(x.net)}</td></tr>`;
   const Z=()=>({L:0,R:0,opex:0,op:0,capex:0,net:0});
@@ -1154,7 +1155,8 @@ function homeTodo(m){
 const pct=(a,b)=>b?(a/b*100).toFixed(1).replace('.',',')+'%':'—';
 function viewHome(m){
   const c=calc(m), mt=monthTable(c), md=S.months[m]||{}, ed=canWrite&&!md.closed;
-  let h=`<section class="card"><div class="shead"><h2>${mLabel(m)}</h2><span class="pill ${md.closed?'closed':'open'}">${md.closed?'закритий':'відкритий'}</span></div>
+  let h=bkDue()?`<section class="card bkdue"><div class="shead"><div><b>Пора зробити резервну копію</b><div class="note">${bkLast()?'Остання — '+dmy(bkLast().date)+'. ':''}Раз на тиждень: один файл з усіма даними — збережіть його в iCloud / Google Drive.</div></div><button class="btn sm pri" data-act="backupJson" type="button" id="bkBtn2">Зберегти копію</button></div></section>`:'';
+  h+=`<section class="card"><div class="shead"><h2>${mLabel(m)}</h2><span class="pill ${md.closed?'closed':'open'}">${md.closed?'закритий':'відкритий'}</span></div>
   <div class="tiles t4">
     ${(()=>{const inn=`<div class="l">Виручка${md.gwThru&&md.gwThru<monthEnd(m)?` <span class="gwd">по ${dmy(md.gwThru).slice(0,5)}</span>`:''}</div><div class="v">${f0(mt.T.rv)}</div><div class="s">${nf1.format(Math.round(mt.T.L))} л продано</div><div class="s">банк ${c.bank?f0(c.bank):'—'} · готівка ${c.cash?f0(c.cash):'не внесено'}</div>`;return ed&&m===cur?`<button type="button" class="tile tapt" data-act="editMoney" title="Внести банк і готівку">${inn}</button>`:`<div class="tile">${inn}</div>`})()}
     <div class="tile"><div class="l">Опер. прибуток</div><div class="v">${f0(mt.op)}</div><div class="s">витрати ${f0(mt.opex)}</div></div>
@@ -2122,6 +2124,20 @@ document.addEventListener('change',e=>{const id=e.target.id;if(id==='rc_pt'){rec
 
 /* ---------- export ---------- */
 function loadXLSX(){return window.XLSX?Promise.resolve():new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc)})}
+function bkLast(){const b=(S.meta||{}).backup;return b&&b.date?b:null}
+function bkDue(){if(role!=='owner')return false;const b=bkLast();return !b||dayDiff(b.date,todayISO2())>=7}
+async function backupJson(){
+  const dl=await window.claude?.use?.('downloads');const sb=window.__sb;
+  if(!dl||!sb){toast('Копія недоступна в цьому перегляді');return}
+  document.querySelectorAll('#bkBtn,#bkBtn2').forEach(b=>{b.disabled=true;b.textContent='Готую…'});
+  try{const rows=[];for(let a=0;;a+=1000){const {data,error}=await sb.from('docs').select('col,id,data').order('col').order('id').range(a,a+999);if(error)throw error;rows.push(...data);if(data.length<1000)break}
+    const ds=todayISO2();
+    await dl.save({filename:`WaterLab-копія-${ds}.json`,data:new Blob([JSON.stringify({app:'WaterLab',made:new Date().toISOString(),by:window.WL_NAME||'',count:rows.length,rows})],{type:'application/json'})});
+    await w(()=>db.doc('meta/backup').set({date:ds,by:window.WL_NAME||'',count:rows.length}));
+    toast('Копію збережено: '+rows.length+' записів');
+  }catch(e){toast('Не вдалося: '+(e.message||e))}
+  render();
+}
 async function exportXlsx(){
   const btn=$('#xlsxBtn');
   const dl=await window.claude?.use?.('downloads');
@@ -2160,7 +2176,7 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('[data-tab]');if(t){tab=t.dataset.tab;render();return}
   const a=e.target.closest('[data-act]');if(!a||!a.dataset.act)return;
   const id=a.dataset.id;
-  ({addMemSt,taskToggle,editTask,addTask:v=>{const [k,p]=String(v||'task').split('|');addTask(k,p)},setSvcSub,addJob,addJobPay,editJob,jobOk,editPM,addPM,editMoney,addExp,editExp,addPay,editPay,addPoint,editPoint,toggleClose,setFilter,editUtil,bulkUtil,editTariffs,exportXlsx,editTariffEntry,editRent,editBill,setRep,setExpSub,editPrice,setInv,payPct,editPctPay,goTab,selMonth,addRent,addAllRent,addRec,addAllRec,setRecon,reconXlsx,editInv,addInv,reconInfo,balInfo,addMov,editMov,editBalOpen,crmApply,billOk,billGo,billAdj,pmInfo,centralInfo,capexInfo,addRadj,addReq,editReq,reqOk,reqNo,utilInfo,billInfo,utilTot,svcPoint,addSvc,editSvc})[a.dataset.act]?.(id);
+  ({backupJson,addMemSt,taskToggle,editTask,addTask:v=>{const [k,p]=String(v||'task').split('|');addTask(k,p)},setSvcSub,addJob,addJobPay,editJob,jobOk,editPM,addPM,editMoney,addExp,editExp,addPay,editPay,addPoint,editPoint,toggleClose,setFilter,editUtil,bulkUtil,editTariffs,exportXlsx,editTariffEntry,editRent,editBill,setRep,setExpSub,editPrice,setInv,payPct,editPctPay,goTab,selMonth,addRent,addAllRent,addRec,addAllRec,setRecon,reconXlsx,editInv,addInv,reconInfo,balInfo,addMov,editMov,editBalOpen,crmApply,billOk,billGo,billAdj,pmInfo,centralInfo,capexInfo,addRadj,addReq,editReq,reqOk,reqNo,utilInfo,billInfo,utilTot,svcPoint,addSvc,editSvc})[a.dataset.act]?.(id);
 });
 $('#monthSel').addEventListener('change',e=>{cur=e.target.value;render()});
 $('#yearSel').addEventListener('change',e=>{cur=pickInYear(e.target.value,cur);render()});
